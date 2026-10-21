@@ -40,7 +40,7 @@ export class CoreAuthService {
         const passwordHash = await this.passwords.hashPassword(password);
         const user = await this.users.create({
             email: normalized,
-            passWordHash: passwordHash,
+            passwordHash,
             extra,
         })
         return {

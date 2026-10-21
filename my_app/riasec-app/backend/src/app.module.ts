@@ -26,13 +26,6 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         FRONTEND_URL: { default: '' },
       }),
     }),
-    AuthCoreModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (c: ConfigService) => ({
-        jwtSecret: c.getOrThrow('JWT_SECRET')
-      }),
-    }),
 
     CoreModule.forRoot({ health: { appName: 'RIASEC APP', version: '1.0.0' } }),
     PrismaModule,

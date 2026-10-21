@@ -1,22 +1,21 @@
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
-import { PassportModule } from '@nestjs/passport';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { AuthCoreModule } from '@myriasec/core-api';
 import { PrismaModule } from '../prisma.module';
 import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
-import { JwtStrategy } from './jwt.strategy';
+import { PrismaUserStore } from './prisma-user.store';
 
 @Module({
   imports: [
-    PrismaModule,
-    PassportModule.register({ defaultStrategy: 'jwt' }),
-    JwtModule.register({
-      secret: process.env.JWT_SECRET || 'riasec_super_secret_jwt_key_2026',
-      signOptions: { expiresIn: '7d' },
+    AuthCoreModule.forRootAsync({
+      imports: [ConfigModule, PrismaModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        jwtSecret: config.getOrThrow<string>('JWT_SECRET'),
+      }),
+      userStore: PrismaUserStore,
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
-  exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

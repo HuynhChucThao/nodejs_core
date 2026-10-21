@@ -32,7 +32,7 @@ export interface AuthUserWithPassword extends AuthUser {
 }
 export interface CreateUserInput {
     email: string;
-    passWordHash: string;
+    passwordHash: string;
 
     // Phần còn lại của DTO đăng ký (name, dreamWork...)
     extra: Record<string, unknown>;

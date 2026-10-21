@@ -1,16 +1,15 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
-import { AuthService } from './auth.service';
-import { LoginDto } from './dto/login.dto';
+import { CoreAuthService, CurrentUser, JwtAuthGuard } from '@myriasec/core-api';
 import { RegisterDto } from './dto/register.dto';
-import { CurrentUser, JwtAuthGuard } from '@myriasec/core-api';
+import { LoginDto } from './dto/login.dto';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private authService: CoreAuthService) {}
 
   @Post('register')
   register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto);
+    return this.authService.register({...dto});
   }
 
   @Post('login')
