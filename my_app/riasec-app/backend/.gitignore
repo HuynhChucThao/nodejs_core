@@ -1,0 +1,13 @@
+dist
+node_modules
+# Keep environment variables out of version control
+.env
+prisma.config.js
+*.js.map
+/generated/prisma
+
+prisma/seed.js
+prisma/seed.d.ts
+prisma/seed.js.map
+prisma.config.js
+*.tsbuildinfo

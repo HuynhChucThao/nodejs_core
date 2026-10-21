@@ -1,0 +1,108 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String      @id @default(uuid())
+  email       String      @unique
+  password    String
+  name        String?
+  role        Role        @default(STUDENT)
+  dreamWork   String?
+  avatarUrl   String?
+  status      Status      @default(ACTIVE)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  savedJobs   SavedJob[]
+  testHistory TestHistory[]
+  feedbacks   Feedback[]
+
+  @@map("user")
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+enum Status {
+  ACTIVE
+  INACTIVE
+}
+
+model Occupation {
+  id          Int      @id @default(autoincrement())
+  jobName     String
+  description String?  @db.Text
+  riasecCode  String   // e.g., "RIA"
+  mainCode    String   // e.g., "R"
+  interestId  Int?
+  education   String?  @db.Text
+  taskRaw     String?  @db.Text // Tasks delimited by '|'
+  skillsRaw   String?  @db.Text // Skills delimited by '|'
+  imageName   String?
+  viewCount   Int      @default(0)
+
+  savedBy     SavedJob[]
+
+  @@map("occupation")
+}
+
+model SavedJob {
+  id           String     @id @default(uuid())
+  userId       String
+  occupationId Int
+  savedAt      DateTime   @default(now())
+
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  occupation   Occupation @relation(fields: [occupationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, occupationId])
+  @@map("savedjob")
+}
+
+model Question {
+  id        String   @id @default(uuid())
+  content   String   @db.Text
+  type      String   // R, I, A, S, E, C
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("question")
+}
+
+model TestHistory {
+  id         String   @id @default(uuid())
+  userId     String
+  resultCode String   // The top 3 RIASEC letters, e.g., "RIA"
+  scores     Json     // JSON storing scores for R, I, A, S, E, C { "R": 10, "I": 8, ... }
+  testedAt   DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("testhistory")
+}
+
+model Feedback {
+  id        String   @id @default(uuid())
+  userId    String
+  content   String   @db.Text
+  rating    Int      @default(5)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("feedback")
+}
