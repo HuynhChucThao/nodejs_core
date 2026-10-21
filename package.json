@@ -1,0 +1,15 @@
+{
+    "name": "my-workspace",
+    "private": true,
+    "dependencies": {
+        "@nestjs/common": "^12.1.3"
+    },
+    "devDependencies": {
+        "@types/node": "^26.6.5"
+    },
+    "pnpm": {
+        "overrides": {
+            "rollup": "npm:@rollup/wasm-node@^4"
+        }
+    }
+}
