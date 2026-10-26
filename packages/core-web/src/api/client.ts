@@ -35,7 +35,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
         const headers: Record<string, string> = {};
         const isForm = typeof FormData != 'undefined' && init.body instanceof FormData;
 
-        if (!isForm) headers['Content-type'] = 'application/json';
+        if (!isForm) headers['Content-Type'] = 'application/json';
         Object.assign(headers, init.headers as Record<string, string> | undefined);
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
