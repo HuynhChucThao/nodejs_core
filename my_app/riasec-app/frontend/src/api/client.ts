@@ -1,3 +1,4 @@
+import { createApiClient, createTokenStorage } from "@myriasec/core-web";
 import {
   Occupation,
   Question,
@@ -10,77 +11,90 @@ const API_BASE =
   (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/+$/, "") ||
   "/api";
 
+// Cơ chế do core cung cấp; tên key và địa chỉ API là của app
+const tokenStorage = createTokenStorage("riasec_token");
 
-class ApiError extends Error {
-  status: number;
-  constructor(message: string, status: number) {
-    super(message);
-    this.status = status;
-  }
-}
+export const getAuthToken = (): string | null => tokenStorage.get();
+export const setAuthToken = (token: string | null): void => tokenStorage.set(token);
 
-export const getAuthToken = (): string | null => {
-  return localStorage.getItem("riasec_token");
-};
+const client = createApiClient({
+  baseUrl: API_BASE,
+  getToken: getAuthToken,
+});
+const request = client.request;
 
-export const setAuthToken = (token: string | null) => {
-  if (token) {
-    localStorage.setItem("riasec_token", token);
-  } else {
-    localStorage.removeItem("riasec_token");
-  }
-};
+// Các hàm cũ khi chưa có core
+// class ApiError extends Error {
+//   status: number;
+//   constructor(message: string, status: number) {
+//     super(message);
+//     this.status = status;
+//   }
+// }
 
-async function request<T>(
-  endpoint: string,
-  options: RequestInit = {},
-): Promise<T> {
-  const token = getAuthToken();
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...((options.headers as Record<string, string>) || {}),
-  };
+// export const getAuthToken = (): string | null => {
+//   return localStorage.getItem("riasec_token");
+// };
 
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
+// export const setAuthToken = (token: string | null) => {
+//   if (token) {
+//     localStorage.setItem("riasec_token", token);
+//   } else {
+//     localStorage.removeItem("riasec_token");
+//   }
+// };
 
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    ...options,
-    headers,
-  });
+// async function request<T>(
+//   endpoint: string,
+//   options: RequestInit = {},
+// ): Promise<T> {
+//   const token = getAuthToken();
+//   const headers: Record<string, string> = {
+//     "Content-Type": "application/json",
+//     ...((options.headers as Record<string, string>) || {}),
+//   };
 
-  const body: any = await response.json().catch(() => null);
-  
-  // // Lấy data trực tiếp từ response nếu có, hoặc dùng body trả về
-  // const data = response.ok ? body : null;
-  
-  if (!response.ok) {
-    const errorMsg =
-      body?.message ||
-      body?.error ||
-      `Request failed with status ${response.status}`;
-    throw new ApiError(
-      Array.isArray(errorMsg) ? errorMsg.join(", ") : errorMsg,
-      response.status,
-    );
-  }
+//   if (token) {
+//     headers["Authorization"] = `Bearer ${token}`;
+//   }
 
-  // Bóc envelope chuẩn của core: { success, statusCode, message, data, timestamp }
-  if(
-    body && 
-    typeof body === "object" && 
-    body.success === true && 
-    "statusCode" in body &&
-    "data" in body
-  ){
-    return body.data as T;
-  }
+//   const response = await fetch(`${API_BASE}${endpoint}`, {
+//     ...options,
+//     headers,
+//   });
 
-  return body as T; // tương thích ngược với reponse chưa bọc
-}
+//   const body: any = await response.json().catch(() => null);
+
+//   // // Lấy data trực tiếp từ response nếu có, hoặc dùng body trả về
+//   // const data = response.ok ? body : null;
+
+//   if (!response.ok) {
+//     const errorMsg =
+//       body?.message ||
+//       body?.error ||
+//       `Request failed with status ${response.status}`;
+//     throw new ApiError(
+//       Array.isArray(errorMsg) ? errorMsg.join(", ") : errorMsg,
+//       response.status,
+//     );
+//   }
+
+//   // Bóc envelope chuẩn của core: { success, statusCode, message, data, timestamp }
+//   if (
+//     body &&
+//     typeof body === "object" &&
+//     body.success === true &&
+//     "statusCode" in body &&
+//     "data" in body
+//   ) {
+//     return body.data as T;
+//   }
+
+//   return body as T; // tương thích ngược với reponse chưa bọc
+// }
 
 // 1. Auth APIs
+
 export const authApi = {
   login: (credentials: { email: string; password: string }) =>
     request<{ message: string; user: User; accessToken: string }>(
