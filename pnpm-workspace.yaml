@@ -1,4 +1,4 @@
 packages:
-  - "packages/core-api"
+  - "packages/*"
   - "my_app/riasec-app/backend"
   - "my_app/riasec-app/frontend"
