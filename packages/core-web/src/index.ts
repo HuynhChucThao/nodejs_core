@@ -8,3 +8,4 @@ export * from './api/client';
 export * from './api/token-storage';
 export * from './auth/auth-events';
 export * from './auth/auth-provider';
+export * from './auth/require-auth';
