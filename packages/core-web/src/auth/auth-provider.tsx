@@ -46,7 +46,9 @@ export function AuthProvider<TUser>(props: AuthProviderProps<TUser>) {
 
     const version = useRef(0);
     const [status, setStatus] = useState<AuthStatus>(() => tokenStorage.get() ? 'loading' : 'unauthenticated');
+    const userRef = useRef<TUser | null>(null);
     const [user, setUserState] = useState<TUser | null>(null);
+    userRef.current = user;
 
     const signOut = useCallback(() => {
         version.current++;
@@ -67,9 +69,14 @@ export function AuthProvider<TUser>(props: AuthProviderProps<TUser>) {
             // Chỉ 401 mới chứng tỏ token vô giá trị. Lỗi mạng hay 500 thì giữ token để thử lại sau
             if (err instanceof ApiError && err.status === 401) {
                 propsRef.current.tokenStorage.set(null);
+                setUserState(null);
+                setStatus('unauthenticated');
+                return;
             }
-            setStatus('unauthenticated');
+            // Lỗi tạm thời (mạng, 500): nếu đang có phiên thì giữ nguyên
+            if (userRef.current) return;
             setUserState(null);
+            setStatus('unauthenticated');
         }
     }, []);
 

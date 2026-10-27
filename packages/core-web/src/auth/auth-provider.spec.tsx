@@ -135,6 +135,53 @@ describe('AuthProvider: hết phiên và chạy đua', () => {
         });
         expect(result.current.user?.name).toBe('Binh');
     });
+    it('refresh gặp lỗi tạm thời -> GIỮ user và phiên', async () => {
+        let fail = false;
+        const { result, tokens } = setup({
+            token: 'token',
+            fetchProfile: async () => {
+                if (fail) throw new ApiError('retry later', 500)
+                return an;
+            }
+        })
+        await waitFor(() => expect(result.current.status).toBe('authenticated'));
+
+        fail = true;
+        await act(async () => {
+            await result.current.refresh();
+        });
+        expect(result.current.user).toEqual(an);
+        expect(tokens.value()).toBe('token');
+        expect(result.current.status).toBe('authenticated');
+    });
+    it('refresh gặp lỗi 401 -> đăng xuất và xóa token', async () => {
+        let expired = false;
+        const { result, tokens } = setup({
+            token: 'token',
+            fetchProfile: async () => {
+                if (expired) throw new ApiError('expired', 401)
+                return an;
+            }
+        })
+        await waitFor(() => expect(result.current.status).toBe('authenticated'));
+        expired = true;
+        await act(async () => {
+            await result.current.refresh();
+        });
+        expect(result.current.status).toBe('unauthenticated');
+        expect(tokens.value()).toBeNull();
+    });
+    it('đang refresh thì nhận 401 -> không đăng nhập lại', async () => {
+        const d = deferred<User>();
+        const { result, tokens } = setup({
+            token: 'token',
+            fetchProfile: () => d.promise
+        });
+        expect(result.current.status).toBe('loading');
+        await act(async () => {
+            d.resolve(an);
+        })
+    })
 });
 describe('useAuth', () => {
     it('dùng ngoài AuthProvider → ném lỗi rõ ràng', () => {

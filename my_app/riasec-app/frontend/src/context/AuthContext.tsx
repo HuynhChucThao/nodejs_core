@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
 import { useAuth as useCoreAuth } from "@myriasec/core-web";
 import { authApi, getAuthToken } from "../api/client";
 import { User } from "../types";
@@ -26,63 +26,61 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const coreAuth = useCoreAuth<User>();
+  const { user, status, signIn, signOut, refresh } = useCoreAuth<User>();
+
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
 
   const openAuthModal = () => setIsAuthModalOpen(true);
   const closeAuthModal = () => setIsAuthModalOpen(false);
 
-  const login = async (email: string, pass: string) => {
-    await coreAuth.signIn(async () => {
-      const result = await authApi.login({ email, password: pass });
-      return { user: result.user, accessToken: result.accessToken };
-    });
-    closeAuthModal();
-  };
-
-  const register = async (
-    email: string,
-    pass: string,
-    name?: string,
-    dreamWork?: string,
-  ) => {
-    await coreAuth.signIn(async () => {
-      const result = await authApi.register({
-        email,
-        password: pass,
-        name,
-        dreamWork,
+  const login = useCallback(
+    async (email: string, pass: string) => {
+      await signIn(async () => {
+        const result = await authApi.login({ email, password: pass });
+        return { user: result.user, accessToken: result.accessToken };
       });
-      return { user: result.user, accessToken: result.accessToken };
-    });
-    closeAuthModal();
-  };
+      closeAuthModal();
+    },
+    [signIn, closeAuthModal]
+  );
 
-  const logout = () => {
-    coreAuth.signOut();
-  };
+  const register = useCallback(
+    async (email: string,
+      pass: string,
+      name?: string,
+      dreamWork?: string,
+    ) => {
+      await signIn(async () => {
+        const result = await authApi.register({
+          email,
+          password: pass,
+          name,
+          dreamWork,
+        });
+        return { user: result.user, accessToken: result.accessToken };
+      });
+      closeAuthModal();
+    },
+    [signIn, closeAuthModal]
+  );
 
-  const refreshUser = async () => {
-    await coreAuth.refresh();
-  };
+  const refreshUser = useCallback(() => refresh(), [refresh]);
+
+  const value = useMemo<AuthContextType>(() => ({
+    user,
+    token: status === "authenticated" ? getAuthToken() : null,
+    isLoading: status === "loading",
+    isAuthModalOpen,
+    openAuthModal,
+    closeAuthModal,
+    login,
+    register,
+    logout: signOut,
+    refreshUser,
+  }), [user, status, isAuthModalOpen, openAuthModal, closeAuthModal, login, register, signOut, refreshUser]);
 
   return (
-    <AuthContext.Provider
-      value={{
-        user: coreAuth.user,
-        token: getAuthToken(),
-        isLoading: coreAuth.status === "loading",
-        isAuthModalOpen,
-        openAuthModal,
-        closeAuthModal,
-        login,
-        register,
-        logout,
-        refreshUser,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
   );
 };
 
