@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { AuthModal } from "./components/auth/AuthModal";
 import { AppHeader } from "./components/layout/AppHeader";
+import { AuthProvider as CoreAuthProvider } from "@myriasec/core-web";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { AdminDashboard } from "./pages/AdminDashboard";
 import { AiAssistantPage } from "./pages/AiAssistantPage";
@@ -12,7 +13,8 @@ import { PreTestPage } from "./pages/PreTestPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { ResultPage } from "./pages/ResultPage";
 import { TestPage } from "./pages/TestPage";
-import { Occupation, TestResult } from "./types";
+import { Occupation, TestResult, User } from "./types";
+import { authApi, authEvents, tokenStorage } from "./api/client";
 
 export const MainApp: React.FC = () => {
   const { user, logout } = useAuth();
@@ -154,8 +156,14 @@ export const MainApp: React.FC = () => {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <MainApp />
-    </AuthProvider>
+    <CoreAuthProvider<User>
+      tokenStorage={tokenStorage}
+      fetchProfile={authApi.getProfile}
+      events={authEvents}
+    >
+      <AuthProvider>
+        <MainApp />
+      </AuthProvider>
+    </CoreAuthProvider>
   );
 }

@@ -1,4 +1,4 @@
-import { createApiClient, createTokenStorage } from "@myriasec/core-web";
+import { createApiClient, createAuthEvents, createTokenStorage } from "@myriasec/core-web";
 import {
   Occupation,
   Question,
@@ -12,7 +12,8 @@ const API_BASE =
   "/api";
 
 // Cơ chế do core cung cấp; tên key và địa chỉ API là của app
-const tokenStorage = createTokenStorage("riasec_token");
+export const tokenStorage = createTokenStorage("riasec_token");
+export const authEvents = createAuthEvents();
 
 export const getAuthToken = (): string | null => tokenStorage.get();
 export const setAuthToken = (token: string | null): void => tokenStorage.set(token);
@@ -20,6 +21,7 @@ export const setAuthToken = (token: string | null): void => tokenStorage.set(tok
 const client = createApiClient({
   baseUrl: API_BASE,
   getToken: getAuthToken,
+  onUnauthorized: () => authEvents.emitUnauthorized(),
 });
 const request = client.request;
 

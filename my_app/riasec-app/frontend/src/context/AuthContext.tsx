@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { authApi, getAuthToken, setAuthToken } from "../api/client";
+import React, { createContext, useContext, useState } from "react";
+import { useAuth as useCoreAuth } from "@myriasec/core-web";
+import { authApi, getAuthToken } from "../api/client";
 import { User } from "../types";
 
 interface AuthContextType {
@@ -25,43 +26,17 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setTokenState] = useState<string | null>(getAuthToken());
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const coreAuth = useCoreAuth<User>();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
 
   const openAuthModal = () => setIsAuthModalOpen(true);
   const closeAuthModal = () => setIsAuthModalOpen(false);
 
-  const refreshUser = async () => {
-    const currentToken = getAuthToken();
-    if (!currentToken) {
-      setUser(null);
-      setIsLoading(false);
-      return;
-    }
-    try {
-      const profile = await authApi.getProfile();
-      setUser(profile);
-    } catch {
-      // Token expired or invalid
-      setAuthToken(null);
-      setTokenState(null);
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    refreshUser();
-  }, []);
-
   const login = async (email: string, pass: string) => {
-    const result = await authApi.login({ email, password: pass });
-    setAuthToken(result.accessToken); // sửa: result.token -> result.accessToken
-    setTokenState(result.accessToken); // sửa: result.token -> result.accessToken
-    setUser(result.user);
+    await coreAuth.signIn(async () => {
+      const result = await authApi.login({ email, password: pass });
+      return { user: result.user, accessToken: result.accessToken };
+    });
     closeAuthModal();
   };
 
@@ -71,30 +46,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     name?: string,
     dreamWork?: string,
   ) => {
-    const result = await authApi.register({
-      email,
-      password: pass,
-      name,
-      dreamWork,
+    await coreAuth.signIn(async () => {
+      const result = await authApi.register({
+        email,
+        password: pass,
+        name,
+        dreamWork,
+      });
+      return { user: result.user, accessToken: result.accessToken };
     });
-    setAuthToken(result.accessToken); // sửa: result.token -> result.accessToken
-    setTokenState(result.accessToken); // sửa: result.token -> result.accessToken
-    setUser(result.user);
     closeAuthModal();
   };
 
   const logout = () => {
-    setAuthToken(null);
-    setTokenState(null);
-    setUser(null);
+    coreAuth.signOut();
+  };
+
+  const refreshUser = async () => {
+    await coreAuth.refresh();
   };
 
   return (
     <AuthContext.Provider
       value={{
-        user,
-        token,
-        isLoading,
+        user: coreAuth.user,
+        token: getAuthToken(),
+        isLoading: coreAuth.status === "loading",
         isAuthModalOpen,
         openAuthModal,
         closeAuthModal,
