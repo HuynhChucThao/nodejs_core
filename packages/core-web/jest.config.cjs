@@ -1,9 +1,9 @@
 module.exports = {
-  testEnvironment: 'node',
+  testEnvironment: 'jsdom',
   roots: ['<rootDir>/src'],
-  testMatch: ['**/*.spec.ts'],
+  testMatch: ['**/*.spec.ts', '**/*.spec.tsx'],
   transform: {
-    '^.+\\.ts$': [
+    '^.+\\.(ts|tsx)$': [
       'ts-jest',
       {
         tsconfig: {
@@ -11,6 +11,7 @@ module.exports = {
           moduleResolution: 'node',
           target: 'ES2020',
           lib: ['ES2020', 'DOM'],
+          jsx: 'react-jsx',
           strict: true,
           esModuleInterop: true,
           skipLibCheck: true,
